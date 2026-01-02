@@ -3,6 +3,7 @@ import json
 from flask import Flask, request, jsonify
 import requests
 from binance.spot import Spot
+from dotenv import load_dotenv
 
 load_dotenv()
 

@@ -2,8 +2,7 @@ import os
 import json
 from flask import Flask, request, jsonify
 import requests
-from binance.client import Client
-from dotenv import load_dotenv
+from binance.spot import Spot
 
 load_dotenv()
 
@@ -16,9 +15,9 @@ BINANCE_TESTNET = os.getenv('BINANCE_TESTNET', 'True') == 'True'
 
 # Initialize Binance client
 if BINANCE_TESTNET:
-    client = Client(BINANCE_API_KEY, BINANCE_API_SECRET, testnet=True)
+    client = Spot(BINANCE_API_KEY, BINANCE_API_SECRET, testnet=True)
 else:
-    client = Client(BINANCE_API_KEY, BINANCE_API_SECRET)
+    client = Spot(BINANCE_API_KEY, BINANCE_API_SECRET)
 
 @app.route('/webhook', methods=['POST'])
 def webhook():

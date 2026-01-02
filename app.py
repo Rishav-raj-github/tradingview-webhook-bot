@@ -20,6 +20,60 @@ if BINANCE_TESTNET:
 else:
     client = Spot(BINANCE_API_KEY, BINANCE_API_SECRET)
 
+# Function to close opposite positions
+def close_opposite_positions(symbol, action):
+    """Close opposite positions when a trade signal is triggered"""
+    try:
+        # Get account information
+        account = client.get_account()
+        
+        # Determine opposite action
+        opposite_action = 'SELL' if action == 'BUY' else 'BUY'
+        
+        # Extract asset from symbol (e.g., 'BTC' from 'BTCUSDT')
+        asset = symbol.replace('USDT', '')
+        
+        # Get open orders
+        open_orders = client.get_open_orders(symbol=symbol)
+        
+        # Close orders with opposite side
+        for order in open_orders:
+            if order['side'] == opposite_action:
+                try:
+                    client.cancel_order(symbol=symbol, orderId=order['orderId'])
+                    print(f"Cancelled {opposite_action} order {order['orderId']} for {symbol}")
+                except Exception as e:
+                    print(f"Could not cancel order {order['orderId']}: {str(e)}")
+        
+        # Also close open positions if using margin/futures
+        # For spot trading, positions are represented by balance
+        if opposite_action == 'SELL':
+            # Try to sell remaining balance if switching to BUY
+            balance = 0
+            for asset_balance in account['balances']:
+                if asset_balance['asset'] == asset:
+                    balance = float(asset_balance['free'])
+                    break
+            
+            if balance > 0:
+                try:
+                    order = client.order_market_sell(
+                        symbol=symbol,
+                        quantity=balance
+                    )
+                    print(f"Closed BUY position: Sold {balance} {asset}")
+                    return {'closed': True, 'quantity': balance}
+                except Exception as e:
+                    print(f"Could not close BUY position: {str(e)}")
+        
+        return {'closed': False}
+    
+    except Exception as e:
+        print(f"Error closing opposite positions: {str(e)}")
+        return {'closed': False, 'error': str(e)}
+
+
+
 @app.route('/webhook', methods=['POST'])
 def webhook():
     try:
@@ -31,6 +85,9 @@ def webhook():
         quantity = float(data.get('quantity', 0.001))
         
         if alert_type == 'BUY':
+                    # Close opposite positions first
+        close_opposite_positions(symbol, 'BUY')
+        # Place BUY order
             # Place BUY order
             order = client.order_market_buy(
                 symbol=symbol,
@@ -43,6 +100,8 @@ def webhook():
             }), 200
             
         elif alert_type == 'SELL':
+                # Close opposite positions first
+        close_opposite_positions(symbol, 'SELL')
             # Get account balance first
             account = client.get_account()
             # Find asset balance

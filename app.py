@@ -16,8 +16,7 @@ BINANCE_TESTNET = os.getenv('BINANCE_TESTNET', 'True') == 'True'
 
 # Initialize Binance client
 if BINANCE_TESTNET:
-    client = Spot(BINANCE_API_KEY, BINANCE_API_SECRET, testnet=True)
-else:
+    client = Spot(BINANCE_API_KEY, BINANCE_API_SECRET, base_url="https://testnet.binance.vision/api")else:
     client = Spot(BINANCE_API_KEY, BINANCE_API_SECRET)
 
 @app.route('/webhook', methods=['POST'])

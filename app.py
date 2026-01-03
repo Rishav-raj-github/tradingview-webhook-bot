@@ -14,11 +14,16 @@ BINANCE_API_KEY = os.getenv('BINANCE_API_KEY')
 BINANCE_API_SECRET = os.getenv('BINANCE_API_SECRET')
 BINANCE_TESTNET = os.getenv('BINANCE_TESTNET', 'True') == 'True'
 
-# Initialize Binance client
-if BINANCE_TESTNET:
-    client = Spot(BINANCE_API_KEY, BINANCE_API_SECRET, base_url="https://testnet.binance.vision/api")
-else:
-    client = Spot(BINANCE_API_KEY, BINANCE_API_SECRET)
+# Try to initialize, allow Flask to start even if Binance fails
+client = None
+try:
+    if BINANCE_TESTNET:
+        client = Spot(BINANCE_API_KEY, BINANCE_API_SECRET, base_url="https://testnet.binance.vision/api")
+    else:
+        client = Spot(BINANCE_API_KEY, BINANCE_API_SECRET)
+except Exception as e:
+    print(f"Warning: Could not initialize Binance client: {e}")
+    client = None
 
 @app.route('/webhook', methods=['POST'])
 def webhook():
